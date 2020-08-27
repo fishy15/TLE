@@ -2,7 +2,5 @@ discord.py
 seaborn
 lxml
 pillow
-pycairo
-pygobject
 aiocache
 pytest
