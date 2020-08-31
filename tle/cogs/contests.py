@@ -229,7 +229,7 @@ class Contests(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @remind.command(brief='Set reminder settings')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def here(self, ctx, role: discord.Role, *before: int):
         """Sets reminder channel to current channel, role to the given role, and reminder
         times to the given values in minutes."""
@@ -243,7 +243,7 @@ class Contests(commands.Cog):
         self._reschedule_tasks(ctx.guild.id)
 
     @remind.command(brief='Clear all reminder settings')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def clear(self, ctx):
         cf_common.user_db.clear_reminder_settings(ctx.guild.id)
         await ctx.send(embed=discord_common.embed_success('Reminder settings cleared'))
@@ -633,7 +633,7 @@ class Contests(commands.Cog):
             await self._watch_rated_vc(rated_vc_id)
 
     @commands.command(brief='Unregister this user from an ongoing ratedvc', usage='@user')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def _unregistervc(self, ctx, user: discord.Member):
         """ Unregister this user from an ongoing ratedvc.
         """
@@ -644,7 +644,7 @@ class Contests(commands.Cog):
         await ctx.send(embed=discord_common.embed_success(f'Successfully unregistered {user.mention} from the ongoing vc.'))
 
     @commands.command(brief='Set the rated vc channel to the current channel')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def set_ratedvc_channel(self, ctx):
         """ Sets the rated vc channel to the current channel.
         """
