@@ -72,7 +72,7 @@ class UserDbConn:
         self.conn.rollback()
     
     def reconnect(self):
-        self.conn = psycopg2.connect(db_url, cursor_factory = psycopg2.extras.NamedTupleCursor)
+        self.conn = psycopg2.connect(self.db_url, cursor_factory = psycopg2.extras.NamedTupleCursor)
 
     def create_tables(self):
         cur = self.conn.cursor()
