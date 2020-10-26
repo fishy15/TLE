@@ -225,7 +225,7 @@ class Graphs(commands.Cog):
             else:
                 message = f'None of the given users {handles_str} are rated'
             raise GraphCogError(message)
-        
+
         def max_prefix(user):
             max_rate = 0
             res = []
@@ -237,11 +237,12 @@ class Graphs(commands.Cog):
                     max_rate = data.newRating
                     res.append(data)
             return(res)
-        
+
         if peak:
             resp = [max_prefix(user) for user in resp]
-                
+
         plt.clf()
+        plt.axes().set_prop_cycle(gc.rating_color_cycler)
         _plot_rating(resp)
         current_ratings = [rating_changes[-1].newRating if rating_changes else 'Unrated' for rating_changes in resp]
         labels = [gc.StrWrap(f'{handle} ({rating})') for handle, rating in zip(handles, current_ratings)]
@@ -455,8 +456,9 @@ class Graphs(commands.Cog):
         all_times = [[dt.datetime.fromtimestamp(sub.creationTimeSeconds) for sub in solved_subs]
                      for solved_subs in all_solved_subs]
         for times in all_times:
-            cumulative_solve_count = range(1, len(times)+1)
-            plt.plot(times, cumulative_solve_count)
+            cumulative_solve_count = list(range(1, len(times)+1)) + [len(times)]
+            timestretched = times + [min(dt.datetime.now(), dt.datetime.fromtimestamp(filt.dhi))]
+            plt.plot(timestretched, cumulative_solve_count)
 
         labels = [gc.StrWrap(f'{handle}: {len(times)}')
                   for handle, times in zip(handles, all_times)]
