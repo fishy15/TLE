@@ -28,7 +28,8 @@ _STANDINGS_PER_PAGE = 15
 _STANDINGS_PAGINATE_WAIT_TIME = 2 * 60
 _FINISHED_CONTESTS_LIMIT = 5
 _WATCHING_RATED_VC_WAIT_TIME = 5 * 60  # seconds
-_RATEDVC_EXTRA_TIME = 10 * 60  # seconds
+_RATED_VC_EXTRA_TIME = 10 * 60  # seconds
+_MIN_RATED_CONTESTANTS_FOR_RATED_VC = 50
 
 class ContestCogError(commands.CommandError):
     pass
@@ -229,7 +230,7 @@ class Contests(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @remind.command(brief='Set reminder settings')
-    @commands.has_any_role('Admin')
+    @commands.has_role('Admin')
     async def here(self, ctx, role: discord.Role, *before: int):
         """Sets reminder channel to current channel, role to the given role, and reminder
         times to the given values in minutes."""
@@ -243,7 +244,7 @@ class Contests(commands.Cog):
         self._reschedule_tasks(ctx.guild.id)
 
     @remind.command(brief='Clear all reminder settings')
-    @commands.has_any_role('Admin')
+    @commands.has_role('Admin')
     async def clear(self, ctx):
         cf_common.user_db.clear_reminder_settings(ctx.guild.id)
         await ctx.send(embed=discord_common.embed_success('Reminder settings cleared'))
@@ -475,6 +476,8 @@ class Contests(commands.Cog):
             # TODO: It will throw an exception if this row corresponds to a team. At present ranklist doesnt show teams.
             # It should be fixed in https://github.com/cheran-senthil/TLE/issues/72
             handle = standing.party.members[0].handle
+            if vc and standing.party.participantType != 'VIRTUAL':
+                continue
             handle_standings.append((handle, standing))
 
         if not handle_standings:
@@ -502,9 +505,10 @@ class Contests(commands.Cog):
             raise ContestCogError('Missing members')
         contest = cf_common.cache2.contest_cache.get_contest(contest_id)
         try:
-            await cf.contest.ratingChanges(contest_id=contest_id)
-        except cf.RatingChangesUnavailableError:
-            error = f'`{contest.name}` was unrated or the ratings changes are not published yet.'
+            (await cf.contest.ratingChanges(contest_id=contest_id))[_MIN_RATED_CONTESTANTS_FOR_RATED_VC - 1]
+        except (cf.RatingChangesUnavailableError, IndexError):
+            error = (f'`{contest.name}` was not rated for at least {_MIN_RATED_CONTESTANTS_FOR_RATED_VC} contestants'
+                    ' or the ratings changes are not published yet.')
             raise ContestCogError(error)
 
         ongoing_vc_member_ids = _get_ongoing_vc_participants()
@@ -520,7 +524,7 @@ class Contests(commands.Cog):
         if contest_id in visited_contests:
             raise ContestCogError(f'Some of the handles: {", ".join(handles)} have submissions in the contest')
         start_time = time.time()
-        finish_time = start_time + contest.durationSeconds + _RATEDVC_EXTRA_TIME
+        finish_time = start_time + contest.durationSeconds + _RATED_VC_EXTRA_TIME
         cf_common.user_db.create_rated_vc(contest_id, start_time, finish_time, ctx.guild.id, [member.id for member in members])
         title = f'Starting {contest.name} for:'
         msg = "\n".join(f'[{discord.utils.escape_markdown(handle)}]({cf.PROFILE_BASE_URL}{handle})' for handle in handles)
@@ -644,7 +648,7 @@ class Contests(commands.Cog):
         await ctx.send(embed=discord_common.embed_success(f'Successfully unregistered {user.mention} from the ongoing vc.'))
 
     @commands.command(brief='Set the rated vc channel to the current channel')
-    @commands.has_any_role('Admin')
+    @commands.has_role('Admin')
     async def set_ratedvc_channel(self, ctx):
         """ Sets the rated vc channel to the current channel.
         """
@@ -746,8 +750,7 @@ class Contests(commands.Cog):
         await ctx.send(embed=embed, file=discord_file)
 
     @discord_common.send_error_if(ContestCogError, rl.RanklistError,
-                                  cache_system2.CacheError, cf_common.ResolveHandleError,
-                                  commands.errors.MissingRequiredArgument)
+                                  cache_system2.CacheError, cf_common.ResolveHandleError)
     async def cog_command_error(self, ctx, error):
         pass
 

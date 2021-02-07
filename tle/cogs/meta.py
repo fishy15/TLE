@@ -6,7 +6,6 @@ import textwrap
 
 from discord.ext import commands
 from tle.util.codeforces_common import pretty_time_format
-from tle.util import codeforces_common as cf_common
 
 RESTART = 42
 
@@ -53,7 +52,7 @@ class Meta(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @meta.command(brief='Restarts TLE')
-    @commands.has_any_role('Admin')
+    @commands.has_role('Admin')
     async def restart(self, ctx):
         """Restarts the bot."""
         # Really, we just exit with a special code
@@ -62,7 +61,7 @@ class Meta(commands.Cog):
         os._exit(RESTART)
 
     @meta.command(brief='Kill TLE')
-    @commands.has_any_role('Admin')
+    @commands.has_role('Admin')
     async def kill(self, ctx):
         """Restarts the bot."""
         await ctx.send('Dying...')
@@ -90,24 +89,13 @@ class Meta(commands.Cog):
                        pretty_time_format(time.time() - self.start_time))
 
     @meta.command(brief='Print bot guilds')
-    @commands.has_any_role('Admin')
+    @commands.has_role('Admin')
     async def guilds(self, ctx):
         "Replies with info on the bot's guilds"
         msg = [f'Guild ID: {guild.id} | Name: {guild.name} | Owner: {guild.owner.id} | Icon: {guild.icon_url}'
                 for guild in self.bot.guilds]
         await ctx.send('```' + '\n'.join(msg) + '```')
 
-    @meta.command(brief='Rollback errors in database')
-    async def rollback(self, ctx):
-        """Rollbacks any errors made in database (only use if necessary when commands stop working)"""
-        cf_common.user_db.rollback()
-        await ctx.send('Rollbacked changes.')
-
-    @meta.command(brief='Reconnect bot to database')
-    async def reconnect(self, ctx):
-        """Reconnect bot to database (only use if necessary when commands stop working)"""
-        cf_common.user_db.reconnect()
-        await ctx.send('Reconnected to database.')
 
 def setup(bot):
     bot.add_cog(Meta(bot))

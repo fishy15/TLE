@@ -28,9 +28,16 @@ def embed_success(desc):
 def embed_alert(desc):
     return discord.Embed(description=str(desc), color=_ALERT_AMBER)
 
+def random_cf_color():
+    return random.choice(_CF_COLORS)
 
 def cf_color_embed(**kwargs):
-    return discord.Embed(**kwargs, color=random.choice(_CF_COLORS))
+    return discord.Embed(**kwargs, color=random_cf_color())
+
+def set_same_cf_color(embeds):
+    color = random_cf_color()
+    for embed in embeds:
+        embed.color=color
 
 
 def attach_image(embed, img_file):
@@ -69,7 +76,7 @@ async def bot_error_handler(ctx, exception):
         await ctx.send(embed=embed_alert('Commands are disabled in private channels'))
     elif isinstance(exception, commands.DisabledCommand):
         await ctx.send(embed=embed_alert('Sorry, this command is temporarily disabled'))
-    elif isinstance(exception, cf.CodeforcesApiError):
+    elif isinstance(exception, (cf.CodeforcesApiError, commands.UserInputError)):
         await ctx.send(embed=embed_alert(exception))
     else:
         exc_info = type(exception), exception, exception.__traceback__

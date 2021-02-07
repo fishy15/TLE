@@ -103,7 +103,7 @@ def _get_extremes(contest, problemset, submissions):
     return min_unsolved, max_solved
 
 
-def _plot_extreme(handle, rating, packed_contest_subs_problemset, solved, unsolved):
+def _plot_extreme(handle, rating, packed_contest_subs_problemset, solved, unsolved, legend):
     extremes = [
         (dt.datetime.fromtimestamp(contest.end_time), _get_extremes(contest, problemset, subs))
         for contest, problemset, subs in packed_contest_subs_problemset
@@ -169,8 +169,9 @@ def _plot_extreme(handle, rating, packed_contest_subs_problemset, solved, unsolv
                         s=32, marker='X',
                         color=unsolvedcolor)
 
-    plt.legend(title=f'{handle}: {rating}', title_fontsize=plt.rcParams['legend.fontsize'],
-               loc='upper left').set_zorder(20)
+    if legend:
+        plt.legend(title=f'{handle}: {rating}', title_fontsize=plt.rcParams['legend.fontsize'],
+                   loc='upper left').set_zorder(20)
     gc.plot_rating_bg(cf.RATED_RANKS)
     plt.gcf().autofmt_xdate()
 
@@ -206,11 +207,11 @@ class Graphs(commands.Cog):
         for name with spaces use "!name with spaces" (with quotes)."""
         await ctx.send_help('plot')
 
-    @plot.command(brief='Plot Codeforces rating graph', usage='[+zoom] [handles...] [d>=[[dd]mm]yyyy] [d<[[dd]mm]yyyy]')
+    @plot.command(brief='Plot Codeforces rating graph', usage='[+zoom] [+peak] [handles...] [d>=[[dd]mm]yyyy] [d<[[dd]mm]yyyy]')
     async def rating(self, ctx, *args: str):
         """Plots Codeforces rating graph for the handles provided."""
 
-        (zoom,), args = cf_common.filter_flags(args, ['+zoom'])
+        (zoom, peak), args = cf_common.filter_flags(args, ['+zoom' , '+peak'])
         filt = cf_common.SubFilter()
         args = filt.parse(args)
         handles = args or ('!' + str(ctx.author),)
@@ -226,7 +227,23 @@ class Graphs(commands.Cog):
                 message = f'None of the given users {handles_str} are rated'
             raise GraphCogError(message)
 
+        def max_prefix(user):
+            max_rate = 0
+            res = []
+            for data in user:
+                old_rating = data.oldRating
+                if old_rating == 0:
+                    old_rating = 1500
+                if data.newRating - old_rating >= 0 and data.newRating >= max_rate:
+                    max_rate = data.newRating
+                    res.append(data)
+            return(res)
+
+        if peak:
+            resp = [max_prefix(user) for user in resp]
+
         plt.clf()
+        plt.axes().set_prop_cycle(gc.rating_color_cycler)
         _plot_rating(resp)
         current_ratings = [rating_changes[-1].newRating if rating_changes else 'Unrated' for rating_changes in resp]
         labels = [gc.StrWrap(f'{handle} ({rating})') for handle, rating in zip(handles, current_ratings)]
@@ -248,12 +265,13 @@ class Graphs(commands.Cog):
         await ctx.send(embed=embed, file=discord_file)
 
     @plot.command(brief='Plot Codeforces extremes graph',
-                  usage='[handles] [+solved] [+unsolved]')
+                  usage='[handles] [+solved] [+unsolved] [+nolegend]')
     async def extreme(self, ctx, *args: str):
         """Plots pairs of lowest rated unsolved problem and highest rated solved problem for every
         contest that was rated for the given user.
         """
-        (solved, unsolved), args = cf_common.filter_flags(args, ['+solved', '+unsolved'])
+        (solved, unsolved, nolegend), args = cf_common.filter_flags(args, ['+solved', '+unsolved', '+nolegend'])
+        legend, = cf_common.negate_flags(nolegend)
         if not solved and not unsolved:
             solved = unsolved = True
 
@@ -277,7 +295,7 @@ class Graphs(commands.Cog):
         ]
 
         rating = max(ratingchanges, key=lambda change: change.ratingUpdateTimeSeconds).newRating
-        _plot_extreme(handle, rating, packed_contest_subs_problemset, solved, unsolved)
+        _plot_extreme(handle, rating, packed_contest_subs_problemset, solved, unsolved, legend)
 
         discord_file = gc.get_current_figure_as_file()
         embed = discord_common.cf_color_embed(title='Codeforces extremes graph')
@@ -381,7 +399,7 @@ class Graphs(commands.Cog):
                 all_times,
                 stacked=True,
                 label=labels,
-                range=(dhi - phase_cnt * phase_time, dhi - dt.timedelta(days=1)),
+                range=(dhi - phase_cnt * phase_time, dhi),
                 bins=min(40, phase_cnt))
 
             total = sum(map(len, all_times))
@@ -401,7 +419,7 @@ class Graphs(commands.Cog):
             phase_cnt = math.ceil((dhi - dlo) / phase_time)
             plt.hist(
                 all_times,
-                range=(dhi - phase_cnt * phase_time, dhi - dt.timedelta(days=1)),
+                range=(dhi - phase_cnt * phase_time, dhi),
                 bins=min(40 // len(handles), phase_cnt))
             plt.legend(labels)
 
@@ -440,8 +458,9 @@ class Graphs(commands.Cog):
         all_times = [[dt.datetime.fromtimestamp(sub.creationTimeSeconds) for sub in solved_subs]
                      for solved_subs in all_solved_subs]
         for times in all_times:
-            cumulative_solve_count = range(1, len(times)+1)
-            plt.plot(times, cumulative_solve_count)
+            cumulative_solve_count = list(range(1, len(times)+1)) + [len(times)]
+            timestretched = times + [min(dt.datetime.now(), dt.datetime.fromtimestamp(filt.dhi))]
+            plt.plot(timestretched, cumulative_solve_count)
 
         labels = [gc.StrWrap(f'{handle}: {len(times)}')
                   for handle, times in zip(handles, all_times)]
@@ -456,10 +475,12 @@ class Graphs(commands.Cog):
         await ctx.send(embed=embed, file=discord_file)
 
     @plot.command(brief='Show history of problems solved by rating',
-                  aliases=['chilli'], usage='[handle] [+practice] [+contest] [+virtual] [+outof] [+team] [+tag..] [r>=rating] [r<=rating] [d>=[[dd]mm]yyyy] [d<[[dd]mm]yyyy] [b=10] [s=3] [c+marker..] [i+index..]')
+                  aliases=['chilli'], usage='[handle] [+practice] [+contest] [+virtual] [+outof] [+team] [+tag..] [r>=rating] [r<=rating] [d>=[[dd]mm]yyyy] [d<[[dd]mm]yyyy] [b=10] [s=3] [c+marker..] [i+index..] [+nolegend]')
     async def scatter(self, ctx, *args):
         """Plot Codeforces rating overlaid on a scatter plot of problems solved.
         Also plots a running average of ratings of problems solved in practice."""
+        (nolegend,), args = cf_common.filter_flags(args, ['+nolegend'])
+        legend, = cf_common.negate_flags(nolegend)
         filt = cf_common.SubFilter()
         args = filt.parse(args)
         handle, bin_size, point_size = None, 10, 3
@@ -504,7 +525,8 @@ class Graphs(commands.Cog):
             labels.append('Regular')
         if virtual:
             labels.append('Virtual')
-        plt.legend(labels, loc='upper left')
+        if legend:
+            plt.legend(labels, loc='upper left')
         _plot_average(practice, bin_size)
         _plot_rating(rating_resp, mark='')
 
@@ -613,10 +635,10 @@ class Graphs(commands.Cog):
                                 binsize=100,
                                 title=title)
 
-    @plot.command(brief='Show percentile distribution on codeforces', usage='[+zoom] [handles...]')
+    @plot.command(brief='Show percentile distribution on codeforces', usage='[+zoom] [+nomarker] [handles...] [+exact]')
     async def centile(self, ctx, *args: str):
         """Show percentile distribution of codeforces and mark given handles in the plot. If +zoom and handles are given, it zooms to the neighborhood of the handles."""
-        (zoom,), args = cf_common.filter_flags(args, ['+zoom'])
+        (zoom, nomarker, exact), args = cf_common.filter_flags(args, ['+zoom', '+nomarker', '+exact'])
         # Prepare data
         intervals = [(rank.low, rank.high) for rank in cf.RATED_RANKS]
         colors = [rank.color_graph for rank in cf.RATED_RANKS]
@@ -626,23 +648,22 @@ class Graphs(commands.Cog):
         n = len(ratings)
         perc = 100*np.arange(n)/n
 
-        if args:
+        users_to_mark = {}
+        if not nomarker:
+            handles = args or ('!' + str(ctx.author),)
             handles = await cf_common.resolve_handles(ctx,
                                                       self.converter,
-                                                      args,
+                                                      handles,
                                                       mincnt=0,
                                                       maxcnt=50)
             infos = await cf.user.info(handles=list(set(handles)))
 
-            users_to_mark = {}
             for info in infos:
                 if info.rating is None:
                     raise GraphCogError(f'User `{info.handle}` is not rated')
                 ix = bisect.bisect_left(ratings, info.rating)
                 cent = 100*ix/len(ratings)
                 users_to_mark[info.handle] = info.rating,cent
-        else:
-            users_to_mark = {}
 
         # Plot
         plt.clf()
@@ -666,34 +687,46 @@ class Graphs(commands.Cog):
                                      facecolor=col)
             ax.add_patch(rect)
 
+        if users_to_mark:
+            ymin = min(point[1] for point in users_to_mark.values())
+            ymax = max(point[1] for point in users_to_mark.values())
+            if zoom:
+                ymargin = max(0.5, (ymax - ymin) * 0.1)
+                ymin -= ymargin
+                ymax += ymargin
+            else:
+                ymin = min(-1.5, ymin - 8)
+                ymax = max(101.5, ymax + 8)
+        else:
+            ymin, ymax = -1.5, 101.5
+
+        if users_to_mark and zoom:
+            xmin = min(point[0] for point in users_to_mark.values())
+            xmax = max(point[0] for point in users_to_mark.values())
+            xmargin = max(20, (xmax - xmin) * 0.1)
+            xmin -= xmargin
+            xmax += xmargin
+        else:
+            xmin, xmax = ratings[0], ratings[-1]
+
+        plt.xlim(xmin, xmax)
+        plt.ylim(ymin, ymax)
+
         # Mark users in plot
-        for user,point in users_to_mark.items():
-            x,y = point
-            plt.annotate(user,
+        for user, point in users_to_mark.items():
+            astr = f'{user} ({round(point[1], 2)})' if exact else user
+            apos = ('left', 'top') if point[0] <= (xmax + xmin) // 2 else ('right', 'bottom')
+            plt.annotate(astr,
                          xy=point,
                          xytext=(0, 0),
                          textcoords='offset points',
-                         ha='right',
-                         va='bottom')
+                         ha=apos[0],
+                         va=apos[1])
             plt.plot(*point,
                      marker='o',
                      markersize=5,
                      color='red',
                      markeredgecolor='darkred')
-
-        # Set limits (before drawing tick lines)
-        if users_to_mark and zoom:
-            xmargin = 50
-            ymargin = 5
-            xmin = min(point[0] for point in users_to_mark.values())
-            xmax = max(point[0] for point in users_to_mark.values())
-            ymin = min(point[1] for point in users_to_mark.values())
-            ymax = max(point[1] for point in users_to_mark.values())
-            plt.xlim(xmin - xmargin, xmax + xmargin)
-            plt.ylim(ymin - ymargin, ymax + ymargin)
-        else:
-            plt.xlim(ratings[0], ratings[-1])
-            plt.ylim(-1.5, 101.5)
 
         # Draw tick lines
         linecolor = '#00000022'
@@ -902,7 +935,7 @@ class Graphs(commands.Cog):
         discord_common.set_author_footer(embed, ctx.author)
         await ctx.send(embed=embed, file=discord_file)
 
-    @discord_common.send_error_if(GraphCogError,  cf_common.ResolveHandleError,
+    @discord_common.send_error_if(GraphCogError, cf_common.ResolveHandleError,
                                   cf_common.FilterError)
     async def cog_command_error(self, ctx, error):
         pass

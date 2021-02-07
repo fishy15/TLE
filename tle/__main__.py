@@ -1,7 +1,9 @@
-import asyncio
 import argparse
+import asyncio
+import distutils.util
 import logging
 import os
+import discord
 from logging.handlers import TimedRotatingFileHandler
 from os import environ
 from pathlib import Path
@@ -11,9 +13,8 @@ from discord.ext import commands
 from matplotlib import pyplot as plt
 
 from tle import constants
-from tle.util import font_downloader
 from tle.util import codeforces_common as cf_common
-from tle.util import discord_common
+from tle.util import discord_common, font_downloader
 
 
 def setup():
@@ -52,14 +53,19 @@ def main():
         logging.error('Token required')
         return
 
-    setup()
+    allow_self_register = environ.get('ALLOW_DUEL_SELF_REGISTER')
+    if allow_self_register:
+        constants.ALLOW_DUEL_SELF_REGISTER = bool(distutils.util.strtobool(allow_self_register))
 
-    bot = commands.Bot(command_prefix=commands.when_mentioned_or(';'))
+    setup()
+    
+    intents = discord.Intents.default()
+    intents.members = True
+
+    bot = commands.Bot(command_prefix=commands.when_mentioned_or(';'), intents=intents)
     cogs = [file.stem for file in Path('tle', 'cogs').glob('*.py')]
-    disallowed_cogs = ['starboard']
     for extension in cogs:
-        if extension not in disallowed_cogs:
-            bot.load_extension(f'tle.cogs.{extension}')
+        bot.load_extension(f'tle.cogs.{extension}')
     logging.info(f'Cogs loaded: {", ".join(bot.cogs)}')
 
     def no_dm_check(ctx):
@@ -78,7 +84,6 @@ def main():
         asyncio.create_task(discord_common.presence(bot))
 
     bot.add_listener(discord_common.bot_error_handler, name='on_command_error')
-
     bot.run(token)
 
 
