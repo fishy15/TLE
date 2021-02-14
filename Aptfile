@@ -18,12 +18,12 @@ libncursesw5-dev
 libpango-1.0-0 
 libpango1.0-dev 
 libpangocairo-1.0-0 
-libpython3.7-dev
+libpython3-dev
 libreadline-dev 
 pkg-config 
 python-gi-dev
 python3-cffi 
 python3-gi 
 python3-gi-cairo
-python3.7-dev
+python3-dev
 zlib1g-dev
