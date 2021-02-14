@@ -342,7 +342,7 @@ class Handles(commands.Cog):
             await member.add_roles(role_to_assign, reason=reason)
 
     @handle.command(brief='Set Codeforces handle of a user')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def set(self, ctx, member: discord.Member, handle: str):
         """Set Codeforces handle of a user."""
         # CF API returns correct handle ignoring case, update to it
@@ -377,10 +377,10 @@ class Handles(commands.Cog):
         """Link a codeforces account to discord account by submitting a compile error to a random problem"""
         if cf_common.user_db.get_handle(ctx.author.id, ctx.guild.id):
             raise HandleCogError(f'{ctx.author.mention}, you cannot identify when your handle is '
-                                 'already set. Ask an Admin or Moderator if you wish to change it')
+                                 'already set. Ask an Admin or Mooderator if you wish to change it')
 
         if cf_common.user_db.get_user_id(handle, ctx.guild.id):
-            raise HandleCogError(f'The handle `{handle}` is already associated with another user. Ask an Admin or Moderator in case of an inconsistency.')
+            raise HandleCogError(f'The handle `{handle}` is already associated with another user. Ask an Admin or Mooderator in case of an inconsistency.')
 
         if handle in cf_common.HandleIsVjudgeError.HANDLES:
             raise cf_common.HandleIsVjudgeError(handle)
@@ -423,7 +423,7 @@ class Handles(commands.Cog):
         await ctx.send(embed=embed)
 
     @handle.command(brief='Remove handle for a user')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def remove(self, ctx, member: discord.Member):
         """Remove Codeforces handle of a user."""
         rc = cf_common.user_db.remove_handle(member.id, ctx.guild.id)
@@ -625,7 +625,7 @@ class Handles(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @roleupdate.command(brief='Update Codeforces rank roles')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def now(self, ctx):
         """Updates Codeforces rank roles for every member in this server."""
         await self._update_ranks(ctx.guild)
@@ -633,7 +633,7 @@ class Handles(commands.Cog):
 
     @roleupdate.command(brief='Enable or disable auto role updates',
                         usage='on|off')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def auto(self, ctx, arg):
         """Auto role update refers to automatic updating of rank roles when rating
         changes are released on Codeforces. 'on'/'off' disables or enables auto role
@@ -654,7 +654,7 @@ class Handles(commands.Cog):
 
     @roleupdate.command(brief='Publish a rank update for the given contest',
                         usage='here|off|contest_id')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def publish(self, ctx, arg):
         """This is a feature to publish a summary of rank changes and top rating
         increases in a particular contest for members of this server. 'here' will

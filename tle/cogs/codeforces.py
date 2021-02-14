@@ -31,7 +31,7 @@ class Codeforces(commands.Cog):
         self.converter = commands.MemberConverter()
 
     @commands.command(brief='update status, mark guild members as active')
-    @commands.has_any_role('Admin')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def _updatestatus(self, ctx):
         active_ids = [m.id for m in ctx.guild.members]
         rc = cf_common.user_db.update_status(active_ids)
@@ -333,7 +333,7 @@ async def gimme(self, ctx, *args):
 
     @commands.command(brief='Force skip a challenge')
     @cf_common.user_guard(group='gitgud')
-    @commands.has_any_role('Admin', 'Moderator')
+    @commands.has_any_role('Admin', 'Mooderator')
     async def _nogud(self, ctx, member: discord.Member):
         active = cf_common.user_db.check_challenge(member.id)
         rc = cf_common.user_db.skip_challenge(member.id, active[0], Gitgud.FORCED_NOGUD)
