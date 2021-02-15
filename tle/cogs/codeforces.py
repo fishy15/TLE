@@ -114,8 +114,8 @@ class Codeforces(commands.Cog):
         for arg in args:
             if arg.isdigit():
                 rating = int(arg)
-            elif arg.startswith("-"):
-                exclusions.append(arg)
+            elif arg.startswith('-'):
+                exclusions.append(arg[1:])
             else:
                 tags.append(arg)
 
@@ -128,7 +128,7 @@ class Codeforces(commands.Cog):
         
         if tags:
             problems = [prob for prob in problems if prob.tag_matches(tags)]
-            problems = [prob for prob in problems if not any(exclude in prob.tags for exclude in exclusions)]
+            problems = [prob for prob in problems if not any(any(exclude in tag for tag in prob.tags) for exclude in exclusions)]
 
         if not problems:
             raise CodeforcesCogError('Problems not found within the search parameters')
