@@ -148,39 +148,39 @@ class Codeforces(commands.Cog):
             embed.add_field(name='Matched tags', value=tagslist)
         await ctx.send(f'Recommended problem for `{handle}`', embed=embed)
 
-        @commands.command(brief='List solved problems',
-                        usage='[handles] [+hardest] [+practice] [+contest] [+virtual] [+outof] [+team] [+tag..] [r>=rating] [r<=rating] [d>=[[dd]mm]yyyy] [d<[[dd]mm]yyyy] [c+marker..] [i+index..]')
-        async def stalk(self, ctx, *args):
-            """Print problems solved by user sorted by time (default) or rating.
-            All submission types are included by default (practice, contest, etc.)
-            """
-            (hardest,), args = cf_common.filter_flags(args, ['+hardest'])
-            filt = cf_common.SubFilter(False)
-            args = filt.parse(args)
-            handles = args or ('!' + str(ctx.author),)
-            handles = await cf_common.resolve_handles(ctx, self.converter, handles)
-            submissions = [await cf.user.status(handle=handle) for handle in handles]
-            submissions = [sub for subs in submissions for sub in subs]
-            submissions = filt.filter_subs(submissions)
+    @commands.command(brief='List solved problems',
+                    usage='[handles] [+hardest] [+practice] [+contest] [+virtual] [+outof] [+team] [+tag..] [r>=rating] [r<=rating] [d>=[[dd]mm]yyyy] [d<[[dd]mm]yyyy] [c+marker..] [i+index..]')
+    async def stalk(self, ctx, *args):
+        """Print problems solved by user sorted by time (default) or rating.
+        All submission types are included by default (practice, contest, etc.)
+        """
+        (hardest,), args = cf_common.filter_flags(args, ['+hardest'])
+        filt = cf_common.SubFilter(False)
+        args = filt.parse(args)
+        handles = args or ('!' + str(ctx.author),)
+        handles = await cf_common.resolve_handles(ctx, self.converter, handles)
+        submissions = [await cf.user.status(handle=handle) for handle in handles]
+        submissions = [sub for subs in submissions for sub in subs]
+        submissions = filt.filter_subs(submissions)
 
-            if not submissions:
-                raise CodeforcesCogError('Submissions not found within the search parameters')
+        if not submissions:
+            raise CodeforcesCogError('Submissions not found within the search parameters')
 
-            if hardest:
-                submissions.sort(key=lambda sub: (sub.problem.rating or 0, sub.creationTimeSeconds), reverse=True)
-            else:
-                submissions.sort(key=lambda sub: sub.creationTimeSeconds, reverse=True)
+        if hardest:
+            submissions.sort(key=lambda sub: (sub.problem.rating or 0, sub.creationTimeSeconds), reverse=True)
+        else:
+            submissions.sort(key=lambda sub: sub.creationTimeSeconds, reverse=True)
 
-            msg = '\n'.join(
-                f'[{sub.problem.name}]({sub.problem.url})\N{EN SPACE}'
-                f'[{sub.problem.rating if sub.problem.rating else "?"}]\N{EN SPACE}'
-                f'({cf_common.days_ago(sub.creationTimeSeconds)})'
-                for sub in submissions[:10]
-            )
-            title = '{} solved problems by `{}`'.format('Hardest' if hardest else 'Recently',
-                                                        '`, `'.join(handles))
-            embed = discord_common.cf_color_embed(title=title, description=msg)
-            await ctx.send(embed=embed)
+        msg = '\n'.join(
+            f'[{sub.problem.name}]({sub.problem.url})\N{EN SPACE}'
+            f'[{sub.problem.rating if sub.problem.rating else "?"}]\N{EN SPACE}'
+            f'({cf_common.days_ago(sub.creationTimeSeconds)})'
+            for sub in submissions[:10]
+        )
+        title = '{} solved problems by `{}`'.format('Hardest' if hardest else 'Recently',
+                                                    '`, `'.join(handles))
+        embed = discord_common.cf_color_embed(title=title, description=msg)
+        await ctx.send(embed=embed)
 
     @commands.command(brief='Create a mashup', usage='[handles] [+tags]')
     async def mashup(self, ctx, *args):
