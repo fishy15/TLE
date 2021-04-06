@@ -1,6 +1,10 @@
 # TLE (+ Heroku)
 
-This repository helps to run tle directly in the heroku. For more information about TLE, check the [main repository](https://github.com/cheran-senthil/TLE).
+This repository helps to run TLE directly in the heroku. For more information about TLE, check the [main repository](https://github.com/cheran-senthil/TLE).
+
+## Note
+
+The master branch is almost deprecated. Heroku files can be used again, but if you are looking for ready-to-use version, you can see [fishy15/TLE](https://github.com/fishy15/TLE) or [hoi branch](https://github.com/ParsaAlizadeh/TLE/tree/hoi) (customized TLE).
 
 ---
 
