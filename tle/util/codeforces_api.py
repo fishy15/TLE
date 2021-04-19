@@ -10,6 +10,7 @@ import aiohttp
 from discord.ext import commands
 
 API_BASE_URL = 'https://codeforces.com/api/'
+RATING_BASE_URL = 'https://cf-rating-api.vercel.app/api/'
 CONTEST_BASE_URL = 'https://codeforces.com/contest/'
 CONTESTS_BASE_URL = 'https://codeforces.com/contests/'
 GYM_BASE_URL = 'https://codeforces.com/gym/'
@@ -243,6 +244,8 @@ def cf_ratelimit(f):
 @cf_ratelimit
 async def _query_api(path, params=None):
     url = API_BASE_URL + path
+    if 'user.ratedList' in path:
+        url = RATING_BASE_URL + path
     try:
         logger.info(f'Querying CF API at {url} with {params}')
         # Explicitly state encoding (though aiohttp accepts gzip by default)
