@@ -113,8 +113,8 @@ class UserDbConn:
         cur.execute('''
             CREATE TABLE IF NOT EXISTS duel (
                 "id"	        SERIAL PRIMARY KEY,
-                "challenger"	INTEGER NOT NULL,
-                "challengee"	INTEGER NOT NULL,
+                "challenger"	TEXT NOT NULL,
+                "challengee"	TEXT NOT NULL,
                 "issue_time"	REAL NOT NULL,
                 "start_time"	REAL,
                 "finish_time"	REAL,
@@ -630,7 +630,7 @@ class UserDbConn:
     def check_duel_challenge(self, userid):
         query = f'''
             SELECT id FROM duel
-            WHERE (challengee = %s OR challenger = %s) AND (status == {Duel.ONGOING} OR status == {Duel.PENDING});
+            WHERE (challengee = CAST(%s AS TEXT) OR challenger = CAST(%s AS TEXT)) AND (status = {Duel.ONGOING} OR status = {Duel.PENDING});
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid, userid))
@@ -639,7 +639,7 @@ class UserDbConn:
     def check_duel_accept(self, challengee):
         query = f'''
             SELECT id, challenger, problem_name FROM duel
-            WHERE challengee = %s AND status == {Duel.PENDING};
+            WHERE challengee = CAST(%s AS TEXT) AND status = {Duel.PENDING};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (challengee,))
@@ -648,7 +648,7 @@ class UserDbConn:
     def check_duel_decline(self, challengee):
         query = f'''
             SELECT id, challenger FROM duel
-            WHERE challengee = %s AND status == {Duel.PENDING};
+            WHERE challengee = CAST(%s AS TEXT) AND status = {Duel.PENDING};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (challengee,))
@@ -657,7 +657,7 @@ class UserDbConn:
     def check_duel_withdraw(self, challenger):
         query = f'''
             SELECT id, challengee FROM duel
-            WHERE challenger = %s AND status == {Duel.PENDING};
+            WHERE challenger = CAST(%s AS TEXT) AND status = {Duel.PENDING};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (challenger,))
@@ -666,7 +666,7 @@ class UserDbConn:
     def check_duel_draw(self, userid):
         query = f'''
             SELECT id, challenger, challengee, start_time, type FROM duel
-            WHERE (challenger = %s OR challengee = %s) AND status == {Duel.ONGOING};
+            WHERE (challenger = CAST(%s AS TEXT) OR challengee = CAST(%s AS TEXT)) AND status = {Duel.ONGOING};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid, userid))
@@ -675,7 +675,7 @@ class UserDbConn:
     def check_duel_complete(self, userid):
         query = f'''
             SELECT id, challenger, challengee, start_time, problem_name, contest_id, p_index, type FROM duel
-            WHERE (challenger = %s OR challengee = %s) AND status == {Duel.ONGOING};
+            WHERE (challenger = CAST(%s AS TEXT) OR challengee = CAST(%s AS TEXT)) AND status = {Duel.ONGOING};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid, userid))
@@ -762,7 +762,7 @@ class UserDbConn:
     def get_duel_wins(self, userid):
         query = f'''
             SELECT start_time, finish_time, problem_name, challenger, challengee FROM duel
-            WHERE ((challenger = %s AND winner == {Winner.CHALLENGER}) OR (challengee = %s AND winner == {Winner.CHALLENGEE})) AND status = {Duel.COMPLETE};
+            WHERE ((challenger = CAST(%s AS TEXT) AND winner = {Winner.CHALLENGER}) OR (challengee = CAST(%s AS TEXT) AND winner = {Winner.CHALLENGEE})) AND status = {Duel.COMPLETE};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid, userid))
@@ -770,7 +770,7 @@ class UserDbConn:
 
     def get_duels(self, userid):
         query = f'''
-            SELECT id, start_time, finish_time, problem_name, challenger, challengee, winner FROM duel WHERE (challengee = %s OR challenger = %s) AND status == {Duel.COMPLETE} ORDER BY start_time DESC;
+            SELECT id, start_time, finish_time, problem_name, challenger, challengee, winner FROM duel WHERE (challengee = CAST(%s AS TEXT) OR challenger = CAST(%s AS TEXT)) AND status = {Duel.COMPLETE} ORDER BY start_time DESC;
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid, userid))
@@ -778,7 +778,7 @@ class UserDbConn:
 
     def get_duel_problem_names(self, userid):
         query = f'''
-            SELECT problem_name FROM duel WHERE (challengee = %s OR challenger = %s) AND (status == {Duel.COMPLETE} OR status == {Duel.INVALID});
+            SELECT problem_name FROM duel WHERE (challengee = CAST(%s AS TEXT) OR challenger = CAST(%s AS TEXT)) AND (status = {Duel.COMPLETE} OR status = {Duel.INVALID});
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid, userid))
@@ -787,7 +787,7 @@ class UserDbConn:
     def get_pair_duels(self, userid1, userid2):
         query = f'''
             SELECT id, start_time, finish_time, problem_name, challenger, challengee, winner FROM duel
-            WHERE ((challenger = %s AND challengee = %s) OR (challenger = %s AND challengee = %s)) AND status == {Duel.COMPLETE} ORDER BY start_time DESC;
+            WHERE ((challenger = CAST(%s AS TEXT) AND challengee = CAST(%s AS TEXT)) OR (challenger = CAST(%s AS TEXT) AND challengee = CAST(%s AS TEXT))) AND status = {Duel.COMPLETE} ORDER BY start_time DESC;
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid1, userid2, userid2, userid1))
@@ -795,7 +795,7 @@ class UserDbConn:
 
     def get_recent_duels(self):
         query = f'''
-            SELECT id, start_time, finish_time, problem_name, challenger, challengee, winner FROM duel WHERE status == {Duel.COMPLETE} ORDER BY start_time DESC LIMIT 7;
+            SELECT id, start_time, finish_time, problem_name, challenger, challengee, winner FROM duel WHERE status = {Duel.COMPLETE} ORDER BY start_time DESC LIMIT 7;
         '''
         cur = self.conn.cursor()
         cur.execute(query)
@@ -804,7 +804,7 @@ class UserDbConn:
     def get_ongoing_duels(self):
         query = f'''
             SELECT start_time, problem_name, challenger, challengee FROM duel
-            WHERE status == {Duel.ONGOING} ORDER BY start_time DESC;
+            WHERE status = {Duel.ONGOING} ORDER BY start_time DESC;
         '''
         cur = self.conn.cursor()
         cur.execute(query)
@@ -812,7 +812,7 @@ class UserDbConn:
 
     def get_num_duel_completed(self, userid):
         query = f'''
-            SELECT COUNT(*) FROM duel WHERE (challengee = %s OR challenger = %s) AND status == {Duel.COMPLETE};
+            SELECT COUNT(*) FROM duel WHERE (challengee = CAST(%s AS TEXT) OR challenger = CAST(%s AS TEXT)) AND status = {Duel.COMPLETE};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid, userid))
@@ -820,7 +820,7 @@ class UserDbConn:
 
     def get_num_duel_draws(self, userid):
         query = f'''
-            SELECT COUNT(*) FROM duel WHERE (challengee = %s OR challenger = %s) AND winner == {Winner.DRAW};
+            SELECT COUNT(*) FROM duel WHERE (challengee = CAST(%s AS TEXT) OR challenger = CAST(%s AS TEXT)) AND winner = {Winner.DRAW};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid, userid))
@@ -829,7 +829,7 @@ class UserDbConn:
     def get_num_duel_losses(self, userid):
         query = f'''
             SELECT COUNT(*) FROM duel
-            WHERE ((challengee = %s AND winner == {Winner.CHALLENGER}) OR (challenger = %s AND winner == {Winner.CHALLENGEE})) AND status = {Duel.COMPLETE};
+            WHERE ((challengee = CAST(%s AS TEXT) AND winner = {Winner.CHALLENGER}) OR (challenger = CAST(%s AS TEXT) AND winner = {Winner.CHALLENGEE})) AND status = {Duel.COMPLETE};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid, userid))
@@ -837,7 +837,7 @@ class UserDbConn:
 
     def get_num_duel_declined(self, userid):
         query = f'''
-            SELECT COUNT(*) FROM duel WHERE challengee = %s AND status == {Duel.DECLINED};
+            SELECT COUNT(*) FROM duel WHERE challengee = CAST(%s AS TEXT) AND status = {Duel.DECLINED};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid,))
@@ -845,7 +845,7 @@ class UserDbConn:
 
     def get_num_duel_rdeclined(self, userid):
         query = f'''
-            SELECT COUNT(*) FROM duel WHERE challenger = %s AND status == {Duel.DECLINED};
+            SELECT COUNT(*) FROM duel WHERE challenger = CAST(%s AS TEXT) AND status = {Duel.DECLINED};
         '''
         cur = self.conn.cursor()
         cur.execute(query, (userid,))
