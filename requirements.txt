@@ -1,4 +1,4 @@
-discord.py>=1.4,<1.5
+discord.py
 seaborn
 lxml
 pillow
