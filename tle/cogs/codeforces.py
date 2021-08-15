@@ -18,8 +18,8 @@ from tle.util import cache_system2
 
 
 _GITGUD_NO_SKIP_TIME = 1 * 60 * 60
-_GITGUD_SCORE_DISTRIB = (2, 3, 5, 8, 12, 17, 23)
-_GITGUD_MAX_ABS_DELTA_VALUE = 300
+_GITGUD_SCORE_DISTRIB = (2, 2, 2, 3, 5, 8, 12, 17, 23, 23, 23)
+_GITGUD_MAX_ABS_DELTA_VALUE = 500
 
 
 class CodeforcesCogError(commands.CommandError):
@@ -64,8 +64,8 @@ class Codeforces(commands.Cog):
     @cf_common.user_guard(group='gitgud')
     async def upsolve(self, ctx, choice: int = -1):
         """Request an unsolved problem from a contest you participated in
-        delta  | -300 | -200 | -100 |  0  | +100 | +200 | +300
-        points |   2  |   3  |   5  |  8  |  12  |  17  |  23
+        delta  | -500 to -300 | -200 | -100 |  0  | +100 | +200 | +300 to +500
+        points |       2      |   3  |   5  |  8  |  12  |  17  |      23
         """
         await self._validate_gitgud_status(ctx,delta=None)
         handle, = await cf_common.resolve_handles(ctx, self.converter, ('!' + str(ctx.author),))
