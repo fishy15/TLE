@@ -77,7 +77,7 @@ class Codeforces(commands.Cog):
         solved = {sub.problem.name for sub in submissions if sub.verdict == 'OK'}
         problems = [prob for prob in cf_common.cache2.problem_cache.problems
                     if prob.name not in solved and prob.contestId in contests
-                    and abs(rating - prob.rating) <= 300]
+                    and abs(rating - prob.rating) <= 500]
 
         if not problems:
             raise CodeforcesCogError('Problems not found within the search parameters')
@@ -226,8 +226,8 @@ class Codeforces(commands.Cog):
     @cf_common.user_guard(group='gitgud')
     async def gitgud(self, ctx, delta: int = 0):
         """Request a problem for gitgud points.
-        delta  | -300 | -200 | -100 |  0  | +100 | +200 | +300
-        points |   2  |   3  |   5  |  8  |  12  |  17  |  23
+        delta  | -500 to -300 | -200 | -100 |  0  | +100 | +200 | +300 to +500
+        points |       2      |   3  |   5  |  8  |  12  |  17  |      23
         """
         await self._validate_gitgud_status(ctx, delta)
         handle, = await cf_common.resolve_handles(ctx, self.converter, ('!' + str(ctx.author),))
