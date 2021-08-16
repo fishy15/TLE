@@ -267,7 +267,7 @@ class Codeforces(commands.Cog):
             line = f'[{name}]({problem.url})\N{EN SPACE}[{problem.rating}]'
             if finish:
                 time_str = cf_common.days_ago(finish)
-                points = f'{_GITGUD_SCORE_DISTRIB[delta // 100 + 3]:+}'
+                points = f'{_GITGUD_SCORE_DISTRIB[delta // 100 + 5]:+}'
                 line += f'\N{EN SPACE}{time_str}\N{EN SPACE}[{points}]'
             return line
 
@@ -301,7 +301,7 @@ class Codeforces(commands.Cog):
         if not name in solved:
             raise CodeforcesCogError('You haven\'t completed your challenge.')
 
-        delta = _GITGUD_SCORE_DISTRIB[delta // 100 + 3]
+        delta = _GITGUD_SCORE_DISTRIB[delta // 100 + 5]
         finish_time = int(datetime.datetime.now().timestamp())
         rc = cf_common.user_db.complete_challenge(user_id, challenge_id, finish_time, delta)
         if rc == 1:
