@@ -265,64 +265,6 @@ class Graphs(commands.Cog):
         discord_common.set_author_footer(embed, ctx.author)
         await ctx.send(embed=embed, file=discord_file)
 
-
-        #plot performance
-        @plot.command(brief='Plot Codeforces performance graph', usage='[+zoom] [+peak] [handles...] [d>=[[dd]mm]yyyy] [d<[[dd]mm]yyyy]')
-        async def performance(self, ctx, *args: str):
-        """Plots Codeforces performance graph for the handles provided."""
-
-        (zoom, peak), args = cf_common.filter_flags(args, ['+zoom' , '+peak'])
-        filt = cf_common.SubFilter()
-        args = filt.parse(args)
-        handles = args or ('!' + str(ctx.author),)
-        handles = await cf_common.resolve_handles(ctx, self.converter, handles)
-        resp = [await cf.user.rating(handle=handle) for handle in handles]
-        # extract last rating before corrections
-        current_ratings = [rating_changes[-1].newRating if rating_changes else 'Unrated' for rating_changes in resp]
-        resp = cf.user.correct_rating_changes(resp=resp)
-        resp = [filt.filter_rating_changes(rating_changes) for rating_changes in resp]
-        
-        if not any(resp):
-            handles_str = ', '.join(f'`{handle}`' for handle in handles)
-            if len(handles) == 1:
-                message = f'User {handles_str} is not rated'
-            else:
-                message = f'None of the given users {handles_str} are rated'
-            raise GraphCogError(message)
-        
-        def max_prefix(user):
-            max_rate = 0
-            res = []
-            for data in user:
-                if data.newRating >= max_rate:
-                    max_rate = data.newRating
-                    res.append(data)
-            return(res)
-
-        if peak:
-            resp = [max_prefix(user) for user in resp]
-            
-        plt.clf()
-        plt.axes().set_prop_cycle(gc.rating_color_cycler)
-        _plot_rating_by_date(resp)
-        labels = [gc.StrWrap(f'{handle} ({rating})') for handle, rating in zip(handles, current_ratings)]
-        plt.legend(labels, bbox_to_anchor=(0, 1, 1, 0), loc='lower left', mode='expand', ncol=2)
-
-        if not zoom:
-            min_rating = 1100
-            max_rating = 1800
-            for rating_changes in resp:
-                for rating in rating_changes:
-                    min_rating = min(min_rating, rating.newRating)
-                    max_rating = max(max_rating, rating.newRating)
-            plt.ylim(min_rating - 100, max_rating + 200)
-
-        discord_file = gc.get_current_figure_as_file()
-        embed = discord_common.cf_color_embed(title='Performance graph on Codeforces')
-        discord_common.attach_image(embed, discord_file)
-        discord_common.set_author_footer(embed, ctx.author)
-        await ctx.send(embed=embed, file=discord_file)
-
     @plot.command(brief='Plot Codeforces extremes graph',
                   usage='[handles] [+solved] [+unsolved] [+nolegend]')
     async def extreme(self, ctx, *args: str):
